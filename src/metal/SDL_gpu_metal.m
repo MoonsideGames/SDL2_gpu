@@ -19,14 +19,12 @@
   3. This notice may not be removed or altered from any source distribution.
 */
 
-#include "SDL_internal.h"
-
-#if SDL_GPU_METAL
+#if SDL_GPU_ENABLE_METAL
 
 #include <Metal/Metal.h>
 #include <QuartzCore/CoreAnimation.h>
 
-#include "../SDL_gpu_driver.h"
+#include "SDL_gpu_driver.h"
 
  /* Defines */
 

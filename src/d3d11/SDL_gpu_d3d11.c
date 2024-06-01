@@ -31,7 +31,7 @@
 #include <dxgi1_6.h>
 #include <dxgidebug.h>
 
-#include "../SDL_gpu_driver.h"
+#include "SDL_gpu_driver.h"
 #include <SDL_syswm.h>
 
 /* MinGW doesn't implement this yet */

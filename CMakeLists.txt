@@ -47,6 +47,12 @@ if (WIN32)
 	)
 endif()
 
+IF (APPLE)
+    add_definitions(
+        -DSDL_GPU_ENABLE_METAL
+    )
+endif()
+
 # Source lists
 add_library(SDL_gpu
 	# Public Headers
@@ -58,9 +64,17 @@ add_library(SDL_gpu
 	src/vulkan/SDL_gpu_vulkan_vkfuncs.h
 	# Source Files
 	src/SDL_gpu.c
+    src/SDL_gpu_spirv.c
 	src/d3d11/SDL_gpu_d3d11.c
+    src/d3d11/SDL_gpu_d3d11_d3dcompiler.c
 	src/vulkan/SDL_gpu_vulkan.c
 )
+
+if (APPLE)
+    add_library(SDL_gpu
+        src/metal/SDL_gpu_metal.m
+    )
+endif()
 
 # Build flags
 if(NOT MSVC)

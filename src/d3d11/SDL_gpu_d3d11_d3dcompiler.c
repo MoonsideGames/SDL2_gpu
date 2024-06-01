@@ -19,10 +19,9 @@
   3. This notice may not be removed or altered from any source distribution.
 */
 
-#include "SDL_internal.h"
-#include "../SDL_gpu_driver.h"
+#include "SDL_gpu_driver.h"
 
-#if SDL_GPU_D3D11
+#if SDL_GPU_ENABLE_D3D11
 
 #define CINTERFACE
 #define COBJMACROS
