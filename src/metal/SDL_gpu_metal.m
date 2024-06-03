@@ -685,12 +685,12 @@ static void METAL_INTERNAL_DestroyBufferContainer(
     SDL_free(container);
 }
 
-static void METAL_ReleaseGpuBuffer(
+static void METAL_ReleaseBuffer(
     SDL_GpuRenderer *driverData,
-    SDL_GpuBuffer *gpuBuffer
+    SDL_GpuBuffer *buffer
 ) {
     MetalRenderer *renderer = (MetalRenderer*) driverData;
-    MetalBufferContainer *container = (MetalBufferContainer*) gpuBuffer;
+    MetalBufferContainer *container = (MetalBufferContainer*) buffer;
 
     SDL_LockMutex(renderer->disposeLock);
 
@@ -927,7 +927,7 @@ static SDL_GpuGraphicsPipeline* METAL_CreateGraphicsPipeline(
 
 /* Debug Naming */
 
-static void METAL_INTERNAL_SetGpuBufferName(
+static void METAL_INTERNAL_SetBufferName(
     MetalRenderer *renderer,
     MetalBuffer *buffer,
     const char *text
@@ -938,7 +938,7 @@ static void METAL_INTERNAL_SetGpuBufferName(
     }
 }
 
-static void METAL_SetGpuBufferName(
+static void METAL_SetBufferName(
     SDL_GpuRenderer *driverData,
     SDL_GpuBuffer *buffer,
     const char *text
@@ -976,24 +976,24 @@ static void METAL_SetStringMarker(
 
 static SDL_GpuSampler* METAL_CreateSampler(
     SDL_GpuRenderer *driverData,
-    SDL_GpuSamplerStateCreateInfo *samplerStateCreateInfo
+    SDL_GpuSamplerCreateInfo *samplerCreateInfo
 ) {
     MetalRenderer *renderer = (MetalRenderer*) driverData;
     MTLSamplerDescriptor *samplerDesc = [MTLSamplerDescriptor new];
     id<MTLSamplerState> sampler;
     MetalSampler *metalSampler;
 
-    samplerDesc.rAddressMode = SDLToMetal_SamplerAddressMode[samplerStateCreateInfo->addressModeU];
-    samplerDesc.sAddressMode = SDLToMetal_SamplerAddressMode[samplerStateCreateInfo->addressModeV];
-    samplerDesc.tAddressMode = SDLToMetal_SamplerAddressMode[samplerStateCreateInfo->addressModeW];
-    samplerDesc.borderColor = SDLToMetal_BorderColor[samplerStateCreateInfo->borderColor];
-    samplerDesc.minFilter = SDLToMetal_MinMagFilter[samplerStateCreateInfo->minFilter];
-    samplerDesc.magFilter = SDLToMetal_MinMagFilter[samplerStateCreateInfo->magFilter];
-    samplerDesc.mipFilter = SDLToMetal_MipFilter[samplerStateCreateInfo->mipmapMode]; /* FIXME: Is this right with non-mipmapped samplers? */
-    samplerDesc.lodMinClamp = samplerStateCreateInfo->minLod;
-    samplerDesc.lodMaxClamp = samplerStateCreateInfo->maxLod;
-    samplerDesc.maxAnisotropy = (samplerStateCreateInfo->anisotropyEnable) ? samplerStateCreateInfo->maxAnisotropy : 1;
-    samplerDesc.compareFunction = (samplerStateCreateInfo->compareEnable) ? SDLToMetal_CompareOp[samplerStateCreateInfo->compareOp] : MTLCompareFunctionAlways;
+    samplerDesc.rAddressMode = SDLToMetal_SamplerAddressMode[samplerCreateInfo->addressModeU];
+    samplerDesc.sAddressMode = SDLToMetal_SamplerAddressMode[samplerCreateInfo->addressModeV];
+    samplerDesc.tAddressMode = SDLToMetal_SamplerAddressMode[samplerCreateInfo->addressModeW];
+    samplerDesc.borderColor = SDLToMetal_BorderColor[samplerCreateInfo->borderColor];
+    samplerDesc.minFilter = SDLToMetal_MinMagFilter[samplerCreateInfo->minFilter];
+    samplerDesc.magFilter = SDLToMetal_MinMagFilter[samplerCreateInfo->magFilter];
+    samplerDesc.mipFilter = SDLToMetal_MipFilter[samplerCreateInfo->mipmapMode]; /* FIXME: Is this right with non-mipmapped samplers? */
+    samplerDesc.lodMinClamp = samplerCreateInfo->minLod;
+    samplerDesc.lodMaxClamp = samplerCreateInfo->maxLod;
+    samplerDesc.maxAnisotropy = (samplerCreateInfo->anisotropyEnable) ? samplerCreateInfo->maxAnisotropy : 1;
+    samplerDesc.compareFunction = (samplerCreateInfo->compareEnable) ? SDLToMetal_CompareOp[samplerCreateInfo->compareOp] : MTLCompareFunctionAlways;
 
     sampler = [renderer->device newSamplerStateWithDescriptor:samplerDesc];
     if (sampler == NULL)
@@ -1233,7 +1233,7 @@ static MetalBuffer* METAL_INTERNAL_CreateBuffer(
     return metalBuffer;
 }
 
-static SDL_GpuBuffer* METAL_CreateGpuBuffer(
+static SDL_GpuBuffer* METAL_CreateBuffer(
     SDL_GpuRenderer *driverData,
     SDL_GpuBufferUsageFlags usageFlags,
     Uint32 sizeInBytes
@@ -1249,7 +1249,7 @@ static SDL_GpuBuffer* METAL_CreateGpuBuffer(
 
     if (buffer == NULL)
     {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to create GpuBuffer!");
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to create buffer!");
         return NULL;
     }
 
@@ -1299,7 +1299,7 @@ static void METAL_INTERNAL_CycleActiveBuffer(
 
     if (renderer->debugMode && container->debugName != NULL)
     {
-        METAL_INTERNAL_SetGpuBufferName(
+        METAL_INTERNAL_SetBufferName(
             renderer,
             container->activeBuffer,
             container->debugName
@@ -1518,14 +1518,14 @@ static void METAL_UploadToTexture(
 static void METAL_UploadToBuffer(
     SDL_GpuCommandBuffer *commandBuffer,
     SDL_GpuTransferBuffer *transferBuffer,
-    SDL_GpuBuffer *gpuBuffer,
+    SDL_GpuBuffer *buffer,
     SDL_GpuBufferCopy *copyParams,
     SDL_bool cycle
 ) {
     MetalCommandBuffer *metalCommandBuffer = (MetalCommandBuffer*) commandBuffer;
     MetalRenderer *renderer = metalCommandBuffer->renderer;
     MetalTransferBufferContainer *metalTransferContainer = (MetalTransferBufferContainer*) transferBuffer;
-    MetalBufferContainer *metalBufferContainer = (MetalBufferContainer*) gpuBuffer;
+    MetalBufferContainer *metalBufferContainer = (MetalBufferContainer*) buffer;
 
     MetalBuffer *metalBuffer = METAL_INTERNAL_PrepareBufferForWrite(
             renderer,
@@ -1605,7 +1605,7 @@ static void METAL_DownloadFromTexture(
 
 static void METAL_DownloadFromBuffer(
     SDL_GpuCommandBuffer *commandBuffer,
-    SDL_GpuBuffer *gpuBuffer,
+    SDL_GpuBuffer *buffer,
     SDL_GpuTransferBuffer *transferBuffer,
     SDL_GpuBufferCopy *copyParams
 ) {
@@ -1952,7 +1952,7 @@ static void METAL_BindVertexBuffers(
 
     for (Uint32 i = 0; i < range.length; i += 1)
     {
-        MetalBuffer *currentBuffer = ((MetalBufferContainer*) pBindings[i].gpuBuffer)->activeBuffer;
+        MetalBuffer *currentBuffer = ((MetalBufferContainer*) pBindings[i].buffer)->activeBuffer;
         NSUInteger bindingIndex = range.length - 1 - i;
         metalBuffers[bindingIndex] = currentBuffer->handle;
         bufferOffsets[bindingIndex] = pBindings[i].offset;
@@ -1968,7 +1968,7 @@ static void METAL_BindIndexBuffer(
     SDL_GpuIndexElementSize indexElementSize
 ) {
     MetalCommandBuffer *metalCommandBuffer = (MetalCommandBuffer*) commandBuffer;
-    metalCommandBuffer->indexBuffer = ((MetalBufferContainer*) pBinding->gpuBuffer)->activeBuffer;
+    metalCommandBuffer->indexBuffer = ((MetalBufferContainer*) pBinding->buffer)->activeBuffer;
     metalCommandBuffer->indexBufferOffset = pBinding->offset;
     metalCommandBuffer->indexElementSize = indexElementSize;
 
@@ -2029,7 +2029,7 @@ static void METAL_BindFragmentStorageBuffers(
     NOT_IMPLEMENTED
 }
 
-static void METAL_DrawInstancedPrimitives(
+static void METAL_DrawIndexedPrimitives(
     SDL_GpuCommandBuffer *commandBuffer,
     Uint32 baseVertex,
     Uint32 startIndex,
@@ -2067,7 +2067,17 @@ static void METAL_DrawPrimitives(
 
 static void METAL_DrawPrimitivesIndirect(
     SDL_GpuCommandBuffer *commandBuffer,
-    SDL_GpuBuffer *gpuBuffer,
+    SDL_GpuBuffer *buffer,
+    Uint32 offsetInBytes,
+    Uint32 drawCount,
+    Uint32 stride
+) {
+    NOT_IMPLEMENTED
+}
+
+static void METAL_DrawIndexedPrimitivesIndirect(
+    SDL_GpuCommandBuffer *commandBuffer,
+    SDL_GpuBuffer *buffer,
     Uint32 offsetInBytes,
     Uint32 drawCount,
     Uint32 stride
@@ -2817,7 +2827,7 @@ static SDL_GpuSampleCount METAL_GetBestSampleCount(
 
 static SDL_GpuShader* METAL_CompileFromSPIRVCross(
     SDL_GpuRenderer *driverData,
-    SDL_GpuShaderStageFlagBits shader_stage,
+    SDL_GpuShaderStage shader_stage,
     const char *entryPointName,
     const char *source
 ) {

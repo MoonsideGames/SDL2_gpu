@@ -225,7 +225,7 @@ struct SDL_GpuDevice
 
 	SDL_GpuSampler* (*CreateSampler)(
 		SDL_GpuRenderer *driverData,
-		SDL_GpuSamplerStateCreateInfo *samplerStateCreateInfo
+		SDL_GpuSamplerCreateInfo *samplerCreateInfo
 	);
 
 	SDL_GpuShader* (*CreateShader)(
@@ -238,7 +238,7 @@ struct SDL_GpuDevice
 		SDL_GpuTextureCreateInfo *textureCreateInfo
 	);
 
-	SDL_GpuBuffer* (*CreateGpuBuffer)(
+	SDL_GpuBuffer* (*CreateBuffer)(
 		SDL_GpuRenderer *driverData,
 		SDL_GpuBufferUsageFlags usageFlags,
 		Uint32 sizeInBytes
@@ -257,7 +257,7 @@ struct SDL_GpuDevice
 
 	/* Debug Naming */
 
-	void (*SetGpuBufferName)(
+	void (*SetBufferName)(
 		SDL_GpuRenderer *driverData,
 		SDL_GpuBuffer *buffer,
 		const char *text
@@ -286,9 +286,9 @@ struct SDL_GpuDevice
 		SDL_GpuSampler *sampler
 	);
 
-	void (*ReleaseGpuBuffer)(
+	void (*ReleaseBuffer)(
 		SDL_GpuRenderer *driverData,
-		SDL_GpuBuffer *gpuBuffer
+		SDL_GpuBuffer *buffer
 	);
 
 	void (*ReleaseTransferBuffer)(
@@ -409,7 +409,7 @@ struct SDL_GpuDevice
         Uint32 dataLengthInBytes
     );
 
-	void (*DrawInstancedPrimitives)(
+	void (*DrawIndexedPrimitives)(
 		SDL_GpuCommandBuffer *commandBuffer,
 		Uint32 baseVertex,
 		Uint32 startIndex,
@@ -425,11 +425,19 @@ struct SDL_GpuDevice
 
 	void (*DrawPrimitivesIndirect)(
 		SDL_GpuCommandBuffer *commandBuffer,
-		SDL_GpuBuffer *gpuBuffer,
+		SDL_GpuBuffer *buffer,
 		Uint32 offsetInBytes,
 		Uint32 drawCount,
 		Uint32 stride
 	);
+
+	void (*DrawIndexedPrimitivesIndirect)(
+        SDL_GpuCommandBuffer *commandBuffer,
+        SDL_GpuBuffer *buffer,
+        Uint32 offsetInBytes,
+        Uint32 drawCount,
+        Uint32 stride
+    );
 
 	void (*EndRenderPass)(
 		SDL_GpuCommandBuffer *commandBuffer
@@ -528,7 +536,7 @@ struct SDL_GpuDevice
 	void (*UploadToBuffer)(
 		SDL_GpuCommandBuffer *commandBuffer,
 		SDL_GpuTransferBuffer *transferBuffer,
-		SDL_GpuBuffer *gpuBuffer,
+		SDL_GpuBuffer *buffer,
 		SDL_GpuBufferCopy *copyParams,
 		SDL_bool cycle
 	);
@@ -562,7 +570,7 @@ struct SDL_GpuDevice
 
 	void (*DownloadFromBuffer)(
 		SDL_GpuCommandBuffer *commandBuffer,
-		SDL_GpuBuffer *gpuBuffer,
+		SDL_GpuBuffer *buffer,
 		SDL_GpuTransferBuffer *transferBuffer,
 		SDL_GpuBufferCopy *copyParams
 	);
@@ -694,7 +702,7 @@ struct SDL_GpuDevice
 
     SDL_GpuShader* (*CompileFromSPIRVCross)(
         SDL_GpuRenderer *driverData,
-        SDL_GpuShaderStageFlagBits shader_stage,
+        SDL_GpuShaderStage shader_stage,
         const char *entryPointName,
         const char *source
     );
@@ -715,15 +723,15 @@ struct SDL_GpuDevice
 	ASSIGN_DRIVER_FUNC(CreateSampler, name) \
 	ASSIGN_DRIVER_FUNC(CreateShader, name) \
 	ASSIGN_DRIVER_FUNC(CreateTexture, name) \
-	ASSIGN_DRIVER_FUNC(CreateGpuBuffer, name) \
+	ASSIGN_DRIVER_FUNC(CreateBuffer, name) \
 	ASSIGN_DRIVER_FUNC(CreateTransferBuffer, name) \
     ASSIGN_DRIVER_FUNC(CreateOcclusionQuery, name) \
-	ASSIGN_DRIVER_FUNC(SetGpuBufferName, name) \
+	ASSIGN_DRIVER_FUNC(SetBufferName, name) \
 	ASSIGN_DRIVER_FUNC(SetTextureName, name) \
     ASSIGN_DRIVER_FUNC(SetStringMarker, name) \
 	ASSIGN_DRIVER_FUNC(ReleaseTexture, name) \
 	ASSIGN_DRIVER_FUNC(ReleaseSampler, name) \
-	ASSIGN_DRIVER_FUNC(ReleaseGpuBuffer, name) \
+	ASSIGN_DRIVER_FUNC(ReleaseBuffer, name) \
 	ASSIGN_DRIVER_FUNC(ReleaseTransferBuffer, name) \
 	ASSIGN_DRIVER_FUNC(ReleaseShader, name) \
 	ASSIGN_DRIVER_FUNC(ReleaseComputePipeline, name) \
@@ -743,9 +751,10 @@ struct SDL_GpuDevice
     ASSIGN_DRIVER_FUNC(BindFragmentStorageBuffers, name) \
 	ASSIGN_DRIVER_FUNC(PushVertexUniformData, name) \
     ASSIGN_DRIVER_FUNC(PushFragmentUniformData, name) \
-	ASSIGN_DRIVER_FUNC(DrawInstancedPrimitives, name) \
+	ASSIGN_DRIVER_FUNC(DrawIndexedPrimitives, name) \
 	ASSIGN_DRIVER_FUNC(DrawPrimitives, name) \
 	ASSIGN_DRIVER_FUNC(DrawPrimitivesIndirect, name) \
+	ASSIGN_DRIVER_FUNC(DrawIndexedPrimitivesIndirect, name) \
 	ASSIGN_DRIVER_FUNC(EndRenderPass, name) \
 	ASSIGN_DRIVER_FUNC(BeginComputePass, name) \
     ASSIGN_DRIVER_FUNC(BindComputePipeline, name) \

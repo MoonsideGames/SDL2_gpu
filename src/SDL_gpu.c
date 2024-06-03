@@ -354,12 +354,12 @@ SDL_GpuGraphicsPipeline* SDL_GpuCreateGraphicsPipeline(
 
 SDL_GpuSampler* SDL_GpuCreateSampler(
 	SDL_GpuDevice *device,
-	SDL_GpuSamplerStateCreateInfo *samplerStateCreateInfo
+	SDL_GpuSamplerCreateInfo *samplerStateInfo
 ) {
 	NULL_ASSERT(device)
 	return device->CreateSampler(
 		device->driverData,
-		samplerStateCreateInfo
+		samplerStateInfo
 	);
 }
 
@@ -436,13 +436,13 @@ SDL_GpuTexture* SDL_GpuCreateTexture(
 	);
 }
 
-SDL_GpuBuffer* SDL_GpuCreateGpuBuffer(
+SDL_GpuBuffer* SDL_GpuCreateBuffer(
 	SDL_GpuDevice *device,
 	SDL_GpuBufferUsageFlags usageFlags,
 	Uint32 sizeInBytes
 ) {
 	NULL_ASSERT(device)
-	return device->CreateGpuBuffer(
+	return device->CreateBuffer(
 		device->driverData,
 		usageFlags,
 		sizeInBytes
@@ -475,7 +475,7 @@ SDL_GpuOcclusionQuery* SDL_GpuCreateOcclusionQuery(
 
 /* Debug Naming */
 
-void SDL_GpuSetGpuBufferName(
+void SDL_GpuSetBufferName(
 	SDL_GpuDevice *device,
 	SDL_GpuBuffer *buffer,
 	const char *text
@@ -483,7 +483,7 @@ void SDL_GpuSetGpuBufferName(
 	NULL_ASSERT(device)
 	NULL_ASSERT(buffer)
 
-	device->SetGpuBufferName(
+	device->SetBufferName(
 		device->driverData,
 		buffer,
 		text
@@ -540,14 +540,14 @@ void SDL_GpuReleaseSampler(
 	);
 }
 
-void SDL_GpuReleaseGpuBuffer(
+void SDL_GpuReleaseBuffer(
 	SDL_GpuDevice *device,
-	SDL_GpuBuffer *gpuBuffer
+	SDL_GpuBuffer *buffer
 ) {
 	NULL_ASSERT(device);
-	device->ReleaseGpuBuffer(
+	device->ReleaseBuffer(
 		device->driverData,
-		gpuBuffer
+		buffer
 	);
 }
 
@@ -838,7 +838,7 @@ void SDL_GpuPushFragmentUniformData(
     );
 }
 
-void SDL_GpuDrawInstancedPrimitives(
+void SDL_GpuDrawIndexedPrimitives(
     SDL_GpuRenderPass *renderPass,
 	Uint32 baseVertex,
 	Uint32 startIndex,
@@ -848,7 +848,7 @@ void SDL_GpuDrawInstancedPrimitives(
 	NULL_ASSERT(renderPass)
     CHECK_RENDERPASS
     CHECK_GRAPHICS_PIPELINE_BOUND
-	RENDERPASS_DEVICE->DrawInstancedPrimitives(
+	RENDERPASS_DEVICE->DrawIndexedPrimitives(
 		RENDERPASS_COMMAND_BUFFER,
 		baseVertex,
 		startIndex,
@@ -874,7 +874,7 @@ void SDL_GpuDrawPrimitives(
 
 void SDL_GpuDrawPrimitivesIndirect(
     SDL_GpuRenderPass *renderPass,
-	SDL_GpuBuffer *gpuBuffer,
+	SDL_GpuBuffer *buffer,
 	Uint32 offsetInBytes,
 	Uint32 drawCount,
 	Uint32 stride
@@ -884,11 +884,30 @@ void SDL_GpuDrawPrimitivesIndirect(
     CHECK_GRAPHICS_PIPELINE_BOUND
 	RENDERPASS_DEVICE->DrawPrimitivesIndirect(
 		RENDERPASS_COMMAND_BUFFER,
-		gpuBuffer,
+		buffer,
 		offsetInBytes,
 		drawCount,
 		stride
 	);
+}
+
+void SDL_GpuDrawIndexedPrimitivesIndirect(
+    SDL_GpuRenderPass *renderPass,
+    SDL_GpuBuffer *buffer,
+    Uint32 offsetInBytes,
+    Uint32 drawCount,
+    Uint32 stride
+) {
+    NULL_ASSERT(renderPass)
+    CHECK_RENDERPASS
+    CHECK_GRAPHICS_PIPELINE_BOUND
+    RENDERPASS_DEVICE->DrawIndexedPrimitivesIndirect(
+        RENDERPASS_COMMAND_BUFFER,
+        buffer,
+        offsetInBytes,
+        drawCount,
+        stride
+    );
 }
 
 void SDL_GpuEndRenderPass(
@@ -1136,7 +1155,7 @@ void SDL_GpuUploadToTexture(
 void SDL_GpuUploadToBuffer(
     SDL_GpuCopyPass *copyPass,
 	SDL_GpuTransferBuffer *transferBuffer,
-	SDL_GpuBuffer *gpuBuffer,
+	SDL_GpuBuffer *buffer,
 	SDL_GpuBufferCopy *copyParams,
 	SDL_bool cycle
 ) {
@@ -1144,7 +1163,7 @@ void SDL_GpuUploadToBuffer(
 	COPYPASS_DEVICE->UploadToBuffer(
 		COPYPASS_COMMAND_BUFFER,
 		transferBuffer,
-		gpuBuffer,
+		buffer,
 		copyParams,
 		cycle
 	);
@@ -1210,14 +1229,14 @@ void SDL_GpuDownloadFromTexture(
 
 void SDL_GpuDownloadFromBuffer(
 	SDL_GpuCopyPass *copyPass,
-	SDL_GpuBuffer *gpuBuffer,
+	SDL_GpuBuffer *buffer,
 	SDL_GpuTransferBuffer *transferBuffer,
 	SDL_GpuBufferCopy *copyParams
 ) {
 	NULL_ASSERT(copyPass);
 	COPYPASS_DEVICE->DownloadFromBuffer(
 		COPYPASS_COMMAND_BUFFER,
-		gpuBuffer,
+		buffer,
 		transferBuffer,
 		copyParams
 	);

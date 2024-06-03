@@ -350,7 +350,7 @@ static D3D11_TEXTURE_ADDRESS_MODE SDLToD3D11_SamplerAddressMode[] =
 };
 
 static void SDLToD3D11_BorderColor(
-	SDL_GpuSamplerStateCreateInfo *createInfo,
+	SDL_GpuSamplerCreateInfo *createInfo,
 	D3D11_SAMPLER_DESC *desc
 ) {
 	switch (createInfo->borderColor)
@@ -381,7 +381,7 @@ static void SDLToD3D11_BorderColor(
 	}
 }
 
-static D3D11_FILTER SDLToD3D11_Filter(SDL_GpuSamplerStateCreateInfo *createInfo)
+static D3D11_FILTER SDLToD3D11_Filter(SDL_GpuSamplerCreateInfo *createInfo)
 {
 	if (createInfo->minFilter == SDL_GPU_FILTER_LINEAR)
 	{
@@ -1219,12 +1219,12 @@ static void D3D11_ReleaseSampler(
 	SDL_free(d3d11Sampler);
 }
 
-static void D3D11_ReleaseGpuBuffer(
+static void D3D11_ReleaseBuffer(
 	SDL_GpuRenderer *driverData,
-	SDL_GpuBuffer *gpuBuffer
+	SDL_GpuBuffer *buffer
 ) {
     D3D11Renderer *renderer = (D3D11Renderer*) driverData;
-	D3D11BufferContainer *container = (D3D11BufferContainer*) gpuBuffer;
+	D3D11BufferContainer *container = (D3D11BufferContainer*) buffer;
 
     SDL_LockMutex(renderer->contextLock);
 
@@ -1598,11 +1598,11 @@ static SDL_GpuComputePipeline* D3D11_CreateComputePipeline(
 	pipeline->computeShader = (ID3D11ComputeShader*) shader->shader;
     ID3D11ComputeShader_AddRef(pipeline->computeShader);
 
-    pipeline->readOnlyStorageTextureCount = pipelineCreateInfo->pipelineResourceLayoutInfo.readOnlyStorageTextureCount;
-    pipeline->readWriteStorageTextureCount = pipelineCreateInfo->pipelineResourceLayoutInfo.readWriteStorageTextureCount;
-    pipeline->readOnlyStorageBufferCount = pipelineCreateInfo->pipelineResourceLayoutInfo.readOnlyStorageBufferCount;
-    pipeline->readWriteStorageBufferCount = pipelineCreateInfo->pipelineResourceLayoutInfo.readWriteStorageBufferCount;
-    pipeline->uniformBufferCount = pipelineCreateInfo->pipelineResourceLayoutInfo.uniformBufferCount;
+    pipeline->readOnlyStorageTextureCount = pipelineCreateInfo->pipelineResourceInfo.readOnlyStorageTextureCount;
+    pipeline->readWriteStorageTextureCount = pipelineCreateInfo->pipelineResourceInfo.readWriteStorageTextureCount;
+    pipeline->readOnlyStorageBufferCount = pipelineCreateInfo->pipelineResourceInfo.readOnlyStorageBufferCount;
+    pipeline->readWriteStorageBufferCount = pipelineCreateInfo->pipelineResourceInfo.readWriteStorageBufferCount;
+    pipeline->uniformBufferCount = pipelineCreateInfo->pipelineResourceInfo.uniformBufferCount;
 
 	return (SDL_GpuComputePipeline*) pipeline;
 }
@@ -1699,22 +1699,22 @@ static SDL_GpuGraphicsPipeline* D3D11_CreateGraphicsPipeline(
 
     /* Resource layout */
 
-    pipeline->vertexSamplerCount = pipelineCreateInfo->vertexResourceLayoutInfo.samplerCount;
-    pipeline->vertexStorageTextureCount = pipelineCreateInfo->vertexResourceLayoutInfo.storageTextureCount;
-    pipeline->vertexStorageBufferCount = pipelineCreateInfo->vertexResourceLayoutInfo.storageBufferCount;
-    pipeline->vertexUniformBufferCount = pipelineCreateInfo->vertexResourceLayoutInfo.uniformBufferCount;
+    pipeline->vertexSamplerCount = pipelineCreateInfo->vertexResourceInfo.samplerCount;
+    pipeline->vertexStorageTextureCount = pipelineCreateInfo->vertexResourceInfo.storageTextureCount;
+    pipeline->vertexStorageBufferCount = pipelineCreateInfo->vertexResourceInfo.storageBufferCount;
+    pipeline->vertexUniformBufferCount = pipelineCreateInfo->vertexResourceInfo.uniformBufferCount;
 
-    pipeline->fragmentSamplerCount = pipelineCreateInfo->fragmentResourceLayoutInfo.samplerCount;
-    pipeline->fragmentStorageTextureCount = pipelineCreateInfo->fragmentResourceLayoutInfo.storageTextureCount;
-    pipeline->fragmentStorageBufferCount = pipelineCreateInfo->fragmentResourceLayoutInfo.storageBufferCount;
-    pipeline->fragmentUniformBufferCount = pipelineCreateInfo->fragmentResourceLayoutInfo.uniformBufferCount;
+    pipeline->fragmentSamplerCount = pipelineCreateInfo->fragmentResourceInfo.samplerCount;
+    pipeline->fragmentStorageTextureCount = pipelineCreateInfo->fragmentResourceInfo.storageTextureCount;
+    pipeline->fragmentStorageBufferCount = pipelineCreateInfo->fragmentResourceInfo.storageBufferCount;
+    pipeline->fragmentUniformBufferCount = pipelineCreateInfo->fragmentResourceInfo.uniformBufferCount;
 
 	return (SDL_GpuGraphicsPipeline*) pipeline;
 }
 
 /* Debug Naming */
 
-static void D3D11_INTERNAL_SetGpuBufferName(
+static void D3D11_INTERNAL_SetBufferName(
 	D3D11Renderer *renderer,
 	D3D11Buffer *buffer,
 	const char *text
@@ -1730,7 +1730,7 @@ static void D3D11_INTERNAL_SetGpuBufferName(
 	}
 }
 
-static void D3D11_SetGpuBufferName(
+static void D3D11_SetBufferName(
 	SDL_GpuRenderer *driverData,
 	SDL_GpuBuffer *buffer,
 	const char *text
@@ -1753,7 +1753,7 @@ static void D3D11_SetGpuBufferName(
 
 		for (Uint32 i = 0; i < container->bufferCount; i += 1)
 		{
-			D3D11_INTERNAL_SetGpuBufferName(
+			D3D11_INTERNAL_SetBufferName(
 				renderer,
 				container->buffers[i],
 				text
@@ -1864,7 +1864,7 @@ static void D3D11_SetStringMarker(
 
 static SDL_GpuSampler* D3D11_CreateSampler(
 	SDL_GpuRenderer *driverData,
-	SDL_GpuSamplerStateCreateInfo *samplerStateCreateInfo
+	SDL_GpuSamplerCreateInfo *samplerCreateInfo
 ) {
 	D3D11Renderer *renderer = (D3D11Renderer*) driverData;
 	D3D11_SAMPLER_DESC samplerDesc;
@@ -1872,29 +1872,29 @@ static SDL_GpuSampler* D3D11_CreateSampler(
 	D3D11Sampler *d3d11Sampler;
 	HRESULT res;
 
-	samplerDesc.AddressU = SDLToD3D11_SamplerAddressMode[samplerStateCreateInfo->addressModeU];
-	samplerDesc.AddressV = SDLToD3D11_SamplerAddressMode[samplerStateCreateInfo->addressModeV];
-	samplerDesc.AddressW = SDLToD3D11_SamplerAddressMode[samplerStateCreateInfo->addressModeW];
+	samplerDesc.AddressU = SDLToD3D11_SamplerAddressMode[samplerCreateInfo->addressModeU];
+	samplerDesc.AddressV = SDLToD3D11_SamplerAddressMode[samplerCreateInfo->addressModeV];
+	samplerDesc.AddressW = SDLToD3D11_SamplerAddressMode[samplerCreateInfo->addressModeW];
 
 	SDLToD3D11_BorderColor(
-		samplerStateCreateInfo,
+		samplerCreateInfo,
 		&samplerDesc
 	);
 
 	samplerDesc.ComparisonFunc = (
-		samplerStateCreateInfo->compareEnable ?
-			SDLToD3D11_CompareOp[samplerStateCreateInfo->compareOp] :
+		samplerCreateInfo->compareEnable ?
+			SDLToD3D11_CompareOp[samplerCreateInfo->compareOp] :
 			SDLToD3D11_CompareOp[SDL_GPU_COMPAREOP_ALWAYS]
 	);
 	samplerDesc.MaxAnisotropy = (
-		samplerStateCreateInfo->anisotropyEnable ?
-			(UINT) samplerStateCreateInfo->maxAnisotropy :
+		samplerCreateInfo->anisotropyEnable ?
+			(UINT) samplerCreateInfo->maxAnisotropy :
 			0
 	);
-	samplerDesc.Filter = SDLToD3D11_Filter(samplerStateCreateInfo);
-	samplerDesc.MaxLOD = samplerStateCreateInfo->maxLod;
-	samplerDesc.MinLOD = samplerStateCreateInfo->minLod;
-	samplerDesc.MipLODBias = samplerStateCreateInfo->mipLodBias;
+	samplerDesc.Filter = SDLToD3D11_Filter(samplerCreateInfo);
+	samplerDesc.MaxLOD = samplerCreateInfo->maxLod;
+	samplerDesc.MinLOD = samplerCreateInfo->minLod;
+	samplerDesc.MipLODBias = samplerCreateInfo->mipLodBias;
 
 	res = ID3D11Device_CreateSamplerState(
 		renderer->device,
@@ -1915,7 +1915,7 @@ SDL_GpuShader* D3D11_CreateShader(
 ) {
 	D3D11Renderer *renderer = (D3D11Renderer*) driverData;
 	D3D11Shader* shaderModule;
-	SDL_GpuShaderStageFlagBits shaderStage = shaderCreateInfo->stage;
+	SDL_GpuShaderStage shaderStage = shaderCreateInfo->stage;
 	ID3D11DeviceChild *shader = NULL;
 	HRESULT res;
 
@@ -2580,7 +2580,7 @@ static D3D11Buffer* D3D11_INTERNAL_CreateBuffer(
 	return d3d11Buffer;
 }
 
-static SDL_GpuBuffer* D3D11_CreateGpuBuffer(
+static SDL_GpuBuffer* D3D11_CreateBuffer(
 	SDL_GpuRenderer *driverData,
 	SDL_GpuBufferUsageFlags usageFlags,
 	Uint32 sizeInBytes
@@ -2639,7 +2639,7 @@ static SDL_GpuBuffer* D3D11_CreateGpuBuffer(
 
 	if (buffer == NULL)
 	{
-		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to create GpuBuffer!");
+		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to create buffer!");
 		return NULL;
 	}
 
@@ -2738,7 +2738,7 @@ static void D3D11_INTERNAL_CycleActiveBuffer(
 
 	if (renderer->debugMode && container->debugName != NULL)
 	{
-		D3D11_INTERNAL_SetGpuBufferName(
+		D3D11_INTERNAL_SetBufferName(
 			renderer,
 			container->activeBuffer,
 			container->debugName
@@ -2746,7 +2746,7 @@ static void D3D11_INTERNAL_CycleActiveBuffer(
 	}
 }
 
-static D3D11Buffer* D3D11_INTERNAL_PrepareGpuBufferForWrite(
+static D3D11Buffer* D3D11_INTERNAL_PrepareBufferForWrite(
 	D3D11Renderer *renderer,
 	D3D11BufferContainer *container,
 	SDL_bool cycle
@@ -3231,7 +3231,7 @@ static void D3D11_UploadToTexture(
 static void D3D11_UploadToBuffer(
 	SDL_GpuCommandBuffer *commandBuffer,
 	SDL_GpuTransferBuffer *transferBuffer,
-	SDL_GpuBuffer *gpuBuffer,
+	SDL_GpuBuffer *buffer,
 	SDL_GpuBufferCopy *copyParams,
 	SDL_bool cycle
 ) {
@@ -3239,10 +3239,10 @@ static void D3D11_UploadToBuffer(
     D3D11Renderer *renderer = (D3D11Renderer*) d3d11CommandBuffer->renderer;
 	D3D11TransferBufferContainer *transferContainer = (D3D11TransferBufferContainer*) transferBuffer;
 	D3D11TransferBuffer *d3d11TransferBuffer = transferContainer->activeBuffer;
-	D3D11BufferContainer *bufferContainer = (D3D11BufferContainer*) gpuBuffer;
+	D3D11BufferContainer *bufferContainer = (D3D11BufferContainer*) buffer;
 	D3D11_BOX srcBox = { copyParams->srcOffset, 0, 0, copyParams->srcOffset + copyParams->size, 1, 1 };
 
-	D3D11Buffer *d3d11Buffer = D3D11_INTERNAL_PrepareGpuBufferForWrite(
+	D3D11Buffer *d3d11Buffer = D3D11_INTERNAL_PrepareBufferForWrite(
 		renderer,
 		bufferContainer,
 		cycle
@@ -3368,14 +3368,14 @@ static void D3D11_DownloadFromTexture(
 
 static void D3D11_DownloadFromBuffer(
     SDL_GpuCommandBuffer *commandBuffer,
-	SDL_GpuBuffer *gpuBuffer,
+	SDL_GpuBuffer *buffer,
 	SDL_GpuTransferBuffer *transferBuffer,
 	SDL_GpuBufferCopy *copyParams
 ) {
     D3D11CommandBuffer *d3d11CommandBuffer = (D3D11CommandBuffer*) commandBuffer;
 	D3D11TransferBufferContainer *container = (D3D11TransferBufferContainer*) transferBuffer;
 	D3D11TransferBuffer *d3d11TransferBuffer = container->activeBuffer;
-	D3D11BufferContainer *d3d11BufferContainer = (D3D11BufferContainer*) gpuBuffer;
+	D3D11BufferContainer *d3d11BufferContainer = (D3D11BufferContainer*) buffer;
 	D3D11_BOX srcBox = { copyParams->srcOffset, 0, 0, copyParams->size, 1, 1 };
 
 	ID3D11DeviceContext1_CopySubresourceRegion1(
@@ -3450,7 +3450,7 @@ static void D3D11_CopyBufferToBuffer(
 	D3D11_BOX srcBox = { copyParams->srcOffset, 0, 0, copyParams->srcOffset + copyParams->size, 1, 1 };
 
 	D3D11Buffer *srcBuffer = srcBufferContainer->activeBuffer;
-	D3D11Buffer *dstBuffer = D3D11_INTERNAL_PrepareGpuBufferForWrite(
+	D3D11Buffer *dstBuffer = D3D11_INTERNAL_PrepareBufferForWrite(
 		renderer,
 		dstBufferContainer,
 		cycle
@@ -3737,7 +3737,7 @@ static SDL_GpuCommandBuffer* D3D11_AcquireCommandBuffer(
 
 static void D3D11_INTERNAL_PushUniformData(
     D3D11CommandBuffer *d3d11CommandBuffer,
-    SDL_GpuShaderStageFlagBits shaderStage,
+    SDL_GpuShaderStage shaderStage,
     Uint32 slotIndex,
     void *data,
     Uint32 dataLengthInBytes
@@ -4272,7 +4272,7 @@ static void D3D11_BindVertexBuffers(
 
 	for (Uint32 i = 0; i < bindingCount; i += 1)
 	{
-		D3D11Buffer *currentBuffer = ((D3D11BufferContainer*) pBindings[i].gpuBuffer)->activeBuffer;
+		D3D11Buffer *currentBuffer = ((D3D11BufferContainer*) pBindings[i].buffer)->activeBuffer;
 		bufferHandles[i] = currentBuffer->handle;
 		bufferOffsets[i] = pBindings[i].offset;
 		D3D11_INTERNAL_TrackBuffer(d3d11CommandBuffer, currentBuffer);
@@ -4294,7 +4294,7 @@ static void D3D11_BindIndexBuffer(
 	SDL_GpuIndexElementSize indexElementSize
 ) {
 	D3D11CommandBuffer *d3d11CommandBuffer = (D3D11CommandBuffer*) commandBuffer;
-	D3D11Buffer *d3d11Buffer = ((D3D11BufferContainer*) pBinding->gpuBuffer)->activeBuffer;
+	D3D11Buffer *d3d11Buffer = ((D3D11BufferContainer*) pBinding->buffer)->activeBuffer;
 
 	D3D11_INTERNAL_TrackBuffer(d3d11CommandBuffer, d3d11Buffer);
 
@@ -4574,7 +4574,7 @@ static void D3D11_INTERNAL_BindGraphicsResources(
     }
 }
 
-static void D3D11_DrawInstancedPrimitives(
+static void D3D11_DrawIndexedPrimitives(
 	SDL_GpuCommandBuffer *commandBuffer,
 	Uint32 baseVertex,
 	Uint32 startIndex,
@@ -4611,7 +4611,7 @@ static void D3D11_DrawPrimitives(
 
 static void D3D11_DrawPrimitivesIndirect(
 	SDL_GpuCommandBuffer *commandBuffer,
-	SDL_GpuBuffer *gpuBuffer,
+	SDL_GpuBuffer *buffer,
 	Uint32 offsetInBytes,
 	Uint32 drawCount,
 	Uint32 stride
@@ -4619,7 +4619,7 @@ static void D3D11_DrawPrimitivesIndirect(
 	D3D11CommandBuffer *d3d11CommandBuffer = (D3D11CommandBuffer*) commandBuffer;
     D3D11_INTERNAL_BindGraphicsResources(d3d11CommandBuffer);
 
-	D3D11Buffer *d3d11Buffer = ((D3D11BufferContainer*) gpuBuffer)->activeBuffer;
+	D3D11Buffer *d3d11Buffer = ((D3D11BufferContainer*) buffer)->activeBuffer;
 
 	/* D3D11: "We have multi-draw at home!"
 	 * Multi-draw at home:
@@ -4634,6 +4634,33 @@ static void D3D11_DrawPrimitivesIndirect(
 	}
 
 	D3D11_INTERNAL_TrackBuffer(d3d11CommandBuffer, d3d11Buffer);
+}
+
+static void D3D11_DrawIndexedPrimitivesIndirect(
+	SDL_GpuCommandBuffer *commandBuffer,
+	SDL_GpuBuffer *buffer,
+	Uint32 offsetInBytes,
+	Uint32 drawCount,
+	Uint32 stride
+) {
+    D3D11CommandBuffer *d3d11CommandBuffer = (D3D11CommandBuffer*) commandBuffer;
+    D3D11_INTERNAL_BindGraphicsResources(d3d11CommandBuffer);
+
+	D3D11Buffer *d3d11Buffer = ((D3D11BufferContainer*) buffer)->activeBuffer;
+
+	/* D3D11: "We have multi-draw at home!"
+	 * Multi-draw at home:
+	 */
+	for (Uint32 i = 0; i < drawCount; i += 1)
+	{
+		ID3D11DeviceContext_DrawIndexedInstancedIndirect(
+			d3d11CommandBuffer->context,
+			d3d11Buffer->handle,
+			offsetInBytes + (stride * i)
+		);
+	}
+
+    D3D11_INTERNAL_TrackBuffer(d3d11CommandBuffer, d3d11Buffer);
 }
 
 static void D3D11_EndRenderPass(
@@ -4880,9 +4907,9 @@ static void D3D11_BeginComputePass(
 
     for (i = 0; i < storageBufferBindingCount; i += 1)
     {
-        bufferContainer = (D3D11BufferContainer*) storageBufferBindings[i].gpuBuffer;
+        bufferContainer = (D3D11BufferContainer*) storageBufferBindings[i].buffer;
 
-        buffer = D3D11_INTERNAL_PrepareGpuBufferForWrite(
+        buffer = D3D11_INTERNAL_PrepareBufferForWrite(
             d3d11CommandBuffer->renderer,
             bufferContainer,
             storageBufferBindings[i].cycle
@@ -6414,7 +6441,7 @@ static SDL_GpuSampleCount D3D11_GetBestSampleCount(
 
 extern SDL_GpuShader* D3D11_CompileFromSPIRVCross(
     SDL_GpuRenderer *driverData,
-    SDL_GpuShaderStageFlagBits shader_stage,
+    SDL_GpuShaderStage shader_stage,
     const char *entryPointName,
     const char *source
 );
@@ -6537,7 +6564,7 @@ static void D3D11_INTERNAL_InitBlitPipelines(
 ) {
     SDL_GpuShaderCreateInfo shaderModuleCreateInfo;
     SDL_GpuGraphicsPipelineCreateInfo blitPipelineCreateInfo;
-    SDL_GpuSamplerStateCreateInfo samplerCreateInfo;
+    SDL_GpuSamplerCreateInfo samplerCreateInfo;
     SDL_GpuVertexBinding binding;
     SDL_GpuVertexAttribute attribute;
     SDL_GpuColorAttachmentDescription colorAttachmentDesc;
@@ -6646,15 +6673,15 @@ static void D3D11_INTERNAL_InitBlitPipelines(
     blitPipelineCreateInfo.blendConstants[2] = 1.0f;
     blitPipelineCreateInfo.blendConstants[3] = 1.0f;
 
-    blitPipelineCreateInfo.vertexResourceLayoutInfo.samplerCount = 0;
-    blitPipelineCreateInfo.vertexResourceLayoutInfo.storageTextureCount = 0;
-    blitPipelineCreateInfo.vertexResourceLayoutInfo.storageBufferCount = 0;
-    blitPipelineCreateInfo.vertexResourceLayoutInfo.uniformBufferCount = 0;
+    blitPipelineCreateInfo.vertexResourceInfo.samplerCount = 0;
+    blitPipelineCreateInfo.vertexResourceInfo.storageTextureCount = 0;
+    blitPipelineCreateInfo.vertexResourceInfo.storageBufferCount = 0;
+    blitPipelineCreateInfo.vertexResourceInfo.uniformBufferCount = 0;
 
-    blitPipelineCreateInfo.fragmentResourceLayoutInfo.samplerCount = 1;
-    blitPipelineCreateInfo.fragmentResourceLayoutInfo.storageTextureCount = 0;
-    blitPipelineCreateInfo.fragmentResourceLayoutInfo.storageBufferCount = 0;
-    blitPipelineCreateInfo.fragmentResourceLayoutInfo.uniformBufferCount = 0;
+    blitPipelineCreateInfo.fragmentResourceInfo.samplerCount = 1;
+    blitPipelineCreateInfo.fragmentResourceInfo.storageTextureCount = 0;
+    blitPipelineCreateInfo.fragmentResourceInfo.storageBufferCount = 0;
+    blitPipelineCreateInfo.fragmentResourceInfo.uniformBufferCount = 0;
 
     renderer->blitFrom2DPipeline = D3D11_CreateGraphicsPipeline(
         (SDL_GpuRenderer*) renderer,
@@ -6669,7 +6696,7 @@ static void D3D11_INTERNAL_InitBlitPipelines(
     /* Blit from 2D array pipeline */
     blitPipelineCreateInfo.fragmentShader = renderer->blitFrom2DArrayPixelShader;
 
-    blitPipelineCreateInfo.fragmentResourceLayoutInfo.uniformBufferCount = 1;
+    blitPipelineCreateInfo.fragmentResourceInfo.uniformBufferCount = 1;
 
     renderer->blitFrom2DArrayPipeline = D3D11_CreateGraphicsPipeline(
         (SDL_GpuRenderer*) renderer,
