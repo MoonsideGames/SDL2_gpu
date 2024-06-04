@@ -2348,12 +2348,12 @@ static void METAL_INTERNAL_PerformPendingDestroys(
 
 static void METAL_WaitForFences(
     SDL_GpuRenderer *driverData,
-    Uint8 waitAll,
+    SDL_bool waitAll,
     Uint32 fenceCount,
     SDL_GpuFence **pFences
 ) {
     MetalRenderer *renderer = (MetalRenderer*) driverData;
-    Uint8 waiting;
+    SDL_bool waiting;
 
     if (waitAll)
     {

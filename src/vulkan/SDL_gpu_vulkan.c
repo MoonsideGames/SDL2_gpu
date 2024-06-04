@@ -1366,7 +1366,7 @@ static Uint8 VULKAN_INTERNAL_DefragmentMemory(VulkanRenderer *renderer);
 static void VULKAN_INTERNAL_BeginCommandBuffer(VulkanRenderer *renderer, VulkanCommandBuffer *commandBuffer);
 static void VULKAN_UnclaimWindow(SDL_GpuRenderer *driverData, SDL_Window *window);
 static void VULKAN_Wait(SDL_GpuRenderer *driverData);
-static void VULKAN_WaitForFences(SDL_GpuRenderer *driverData, Uint8 waitAll, Uint32 fenceCount, SDL_GpuFence **pFences);
+static void VULKAN_WaitForFences(SDL_GpuRenderer *driverData, SDL_bool waitAll, Uint32 fenceCount, SDL_GpuFence **pFences);
 static void VULKAN_Submit(SDL_GpuCommandBuffer *commandBuffer);
 static VulkanTextureSlice* VULKAN_INTERNAL_FetchTextureSlice(VulkanTexture* texture, Uint32 layer, Uint32 level);
 static VulkanTexture* VULKAN_INTERNAL_CreateTexture(
@@ -11167,7 +11167,7 @@ static void VULKAN_INTERNAL_CleanCommandBuffer(
 
 static void VULKAN_WaitForFences(
     SDL_GpuRenderer *driverData,
-    Uint8 waitAll,
+    SDL_bool waitAll,
     Uint32 fenceCount,
     SDL_GpuFence **pFences
 ) {

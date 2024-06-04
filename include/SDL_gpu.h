@@ -515,9 +515,9 @@ typedef struct SDL_GpuSamplerCreateInfo
 	SDL_GpuSamplerAddressMode addressModeV;
 	SDL_GpuSamplerAddressMode addressModeW;
 	float mipLodBias;
-	Uint8 anisotropyEnable;
+	SDL_bool anisotropyEnable;
 	float maxAnisotropy;
-	Uint8 compareEnable;
+	SDL_bool compareEnable;
 	SDL_GpuCompareOp compareOp;
 	float minLod;
 	float maxLod;
@@ -558,7 +558,7 @@ typedef struct SDL_GpuStencilOpState
 
 typedef struct SDL_GpuColorAttachmentBlendState
 {
-	Uint8 blendEnable;
+	SDL_bool blendEnable;
 	SDL_GpuBlendFactor srcColorBlendFactor;
 	SDL_GpuBlendFactor dstColorBlendFactor;
 	SDL_GpuBlendOp colorBlendOp;
@@ -582,7 +582,7 @@ typedef struct SDL_GpuTextureCreateInfo
 	Uint32 width;
 	Uint32 height;
 	Uint32 depth;
-	Uint8 isCube;
+	SDL_bool isCube;
 	Uint32 layerCount;
 	Uint32 levelCount;
 	SDL_GpuSampleCount sampleCount;
@@ -597,7 +597,7 @@ typedef struct SDL_GpuRasterizerState
 	SDL_GpuFillMode fillMode;
 	SDL_GpuCullMode cullMode;
 	SDL_GpuFrontFace frontFace;
-	Uint8 depthBiasEnable;
+	SDL_bool depthBiasEnable;
 	float depthBiasConstantFactor;
 	float depthBiasClamp;
 	float depthBiasSlopeFactor;
@@ -611,11 +611,11 @@ typedef struct SDL_GpuMultisampleState
 
 typedef struct SDL_GpuDepthStencilState
 {
-	Uint8 depthTestEnable;
-	Uint8 depthWriteEnable;
+	SDL_bool depthTestEnable;
+	SDL_bool depthWriteEnable;
 	SDL_GpuCompareOp compareOp;
-	Uint8 depthBoundsTestEnable;
-	Uint8 stencilTestEnable;
+	SDL_bool depthBoundsTestEnable;
+	SDL_bool stencilTestEnable;
 	SDL_GpuStencilOpState backStencilState;
 	SDL_GpuStencilOpState frontStencilState;
 	Uint32 compareMask;
@@ -635,7 +635,7 @@ typedef struct SDL_GpuGraphicsPipelineAttachmentInfo
 {
 	SDL_GpuColorAttachmentDescription *colorAttachmentDescriptions;
 	Uint32 colorAttachmentCount;
-	Uint8 hasDepthStencilAttachment;
+	SDL_bool hasDepthStencilAttachment;
 	SDL_GpuTextureFormat depthStencilFormat;
 } SDL_GpuGraphicsPipelineAttachmentInfo;
 
@@ -2166,7 +2166,7 @@ extern SDL_DECLSPEC void SDLCALL SDL_GpuWait(
  */
 extern SDL_DECLSPEC void SDLCALL SDL_GpuWaitForFences(
 	SDL_GpuDevice *device,
-	Uint8 waitAll,
+	SDL_bool waitAll,
 	Uint32 fenceCount,
 	SDL_GpuFence **pFences
 );

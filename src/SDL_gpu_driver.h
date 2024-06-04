@@ -650,7 +650,7 @@ struct SDL_GpuDevice
 
 	void (*WaitForFences)(
 		SDL_GpuRenderer *driverData,
-		Uint8 waitAll,
+		SDL_bool waitAll,
 		Uint32 fenceCount,
 		SDL_GpuFence **pFences
 	);

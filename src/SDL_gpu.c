@@ -1452,7 +1452,7 @@ void SDL_GpuWait(
 
 void SDL_GpuWaitForFences(
 	SDL_GpuDevice *device,
-	Uint8 waitAll,
+	SDL_bool waitAll,
 	Uint32 fenceCount,
 	SDL_GpuFence **pFences
 ) {
